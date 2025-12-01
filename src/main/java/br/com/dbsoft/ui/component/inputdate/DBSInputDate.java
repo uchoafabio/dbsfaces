@@ -1,14 +1,22 @@
 package br.com.dbsoft.ui.component.inputdate;
 
+import java.lang.reflect.Array;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 
 import javax.faces.component.FacesComponent;
 
 import br.com.dbsoft.ui.component.DBSUIInput;
 import br.com.dbsoft.ui.core.DBSFaces;
 import br.com.dbsoft.util.DBSDate;
+import br.com.dbsoft.util.DBSFormat;
+import br.com.dbsoft.util.DBSObject;
+import br.com.dbsoft.util.DBSString;
 
 @FacesComponent(DBSInputDate.COMPONENT_TYPE)
 public class DBSInputDate extends DBSUIInput {
@@ -25,7 +33,8 @@ public class DBSInputDate extends DBSUIInput {
 		type,
 		autocomplete,
 		dateMax,
-		dateMin;
+		dateMin,
+		holidays;
 
 		String toString;
 
@@ -41,6 +50,27 @@ public class DBSInputDate extends DBSUIInput {
 		}
 	}
 	
+	public void setHolidays(Object pHolidays) {
+		getStateHelper().put(PropertyKeys.holidays, pHolidays);
+		handleAttribute("holidays", pHolidays);
+	}
+	public Object getHolidays() {
+		return getStateHelper().eval(PropertyKeys.holidays, null);
+	}
+
+	public List<String> getHolidayDatesIso() {
+		LinkedHashSet<String> xValues = new LinkedHashSet<String>();
+		pvCollectHolidayDates(getHolidays(), xValues);
+		return new ArrayList<String>(xValues);
+	}
+
+	public String getHolidayDatesAttribute() {
+		List<String> xHolidays = getHolidayDatesIso();
+		if (xHolidays.isEmpty()){
+			return null;
+		}
+		return DBSString.listToCSV(xHolidays);
+	}
 
 	
     public DBSInputDate(){
@@ -149,5 +179,76 @@ public class DBSInputDate extends DBSUIInput {
 		return DBSDate.toTimestamp(super.getValue());
 	}
 	
+
+	private void pvCollectHolidayDates(Object pValue, Collection<String> pTarget) {
+		if (pValue == null || pTarget == null){
+			return;
+		}
+		if (pValue instanceof Collection<?>){
+			for (Object xItem : (Collection<?>) pValue){
+				pvCollectHolidayDates(xItem, pTarget);
+			}
+			return;
+		}
+		if (pValue.getClass().isArray()){
+			int xLength = Array.getLength(pValue);
+			for (int xI = 0; xI < xLength; xI++){
+				pvCollectHolidayDates(Array.get(pValue, xI), pTarget);
+			}
+			return;
+		}
+		if (pValue instanceof CharSequence){
+			pvCollectHolidayDatesFromString(pValue.toString(), pTarget);
+			return;
+		}
+		Date xDate = pvToDate(pValue);
+		if (xDate != null){
+			pTarget.add(DBSFormat.getFormattedDateCustom(xDate, "yyyy-MM-dd"));
+		}
+	}
+
+	private void pvCollectHolidayDatesFromString(String pValue, Collection<String> pTarget){
+		if (DBSObject.isEmpty(pValue) || pTarget == null){
+			return;
+		}
+		String xClean = pValue.trim();
+		if (xClean.startsWith("[") && xClean.endsWith("]")){
+			xClean = xClean.substring(1, xClean.length() - 1);
+		}
+		xClean = xClean.replace("\n", ",").replace("\r", ",");
+		if (DBSObject.isEmpty(xClean)){
+			return;
+		}
+		Date xDate = pvToDate(xClean);
+		if (xDate != null){
+			pTarget.add(DBSFormat.getFormattedDateCustom(xDate, "yyyy-MM-dd"));
+			return;
+		}
+		String[] xParts = xClean.split("[,;]");
+		if (xParts.length > 1){
+			for (String xPart : xParts){
+				pvCollectHolidayDatesFromString(xPart, pTarget);
+			}
+		}
+	}
+
+	private Date pvToDate(Object pValue){
+		if (pValue == null){
+			return null;
+		}
+		if (pValue instanceof Date){
+			return (Date) pValue;
+		}
+		if (pValue instanceof java.util.Date){
+			return DBSDate.toDate((java.util.Date) pValue);
+		}
+		if (pValue instanceof Long){
+			return DBSDate.toDate((Long) pValue);
+		}
+		if (pValue instanceof java.util.Calendar){
+			return DBSDate.toDate((java.util.Calendar) pValue);
+		}
+		return DBSDate.toDate(pValue);
+	}
 
 }
