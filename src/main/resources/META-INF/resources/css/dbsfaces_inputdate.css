@@ -1,4 +1,4 @@
-/* .dbs_inputDate{
+.dbs_inputDate{
 }
 
 .dbs_inputDate > .-container{
@@ -13,12 +13,12 @@
 	display: inline-block;
 	line-height: 100%;
 	border: 0 none;
-	margin-top: 2px; Comentado em 2016-01-13
+/* 	margin-top: 2px; Comentado em 2016-01-13*/
 	font-size: inherit;
 	background-color: transparent !important;
-	text-align: left; incluido em 2016-01-12
+	text-align: left; /*incluido em 2016-01-12 */
 	color: currentColor;
-	height: 13px; COMENTADO EM 2016-01-12 por Ricardo para permitir ajuste fontes de tamanhos diferentes
+/* 	height: 13px; COMENTADO EM 2016-01-12 por Ricardo para permitir ajuste fontes de tamanhos diferentes*/
 }	
 
 .dbs_inputDate > .-container > .-th_input-data > label{
@@ -28,49 +28,3 @@
 }
 
 
- */
- 
- .dbs_inputDate {
-}
-
-.dbs_inputDate > .-container {
-  position: relative;
-}
-
-.dbs_inputDate > .-container > .-th_input-label {
-}
-
-.dbs_inputDate > .-container > .-th_input-data {
-  display: inline;
-  flex-wrap: wrap;
-  gap: 0.35em;
-  align-items: center;
-}
-
-.dbs_inputDate > .-container > .-th_input-data > input {
-  border: 0 none;
-  background-color: transparent;
-  font: inherit;
-  color: currentColor;
-  line-height: 1.4;
-  padding: 0.15em 0.2em;
-  text-align: left;
-  min-width: 5em;
-}
-
-.dbs_inputDate > .-container > .-th_input-data > input.-day {
-  min-width: 9em;
-}
-
-.dbs_inputDate > .-container > .-th_input-data > input.-hour {
-  min-width: 6em;
-}
-
-.dbs_inputDate > .-container > .-th_input-data.-th_input-data-FOCUS {
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.2);
-}
-
-.dbs_inputDate > .-container > .-th_input-data.-th_input-data-FOCUS input {
-  outline: none;
-}
- 
