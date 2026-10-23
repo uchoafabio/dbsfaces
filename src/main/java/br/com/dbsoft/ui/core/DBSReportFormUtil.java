@@ -255,6 +255,16 @@ public class DBSReportFormUtil {
 			wLogger.error(e);
 		}
 	}
+
+	/** Envia o CSV já preparado a partir dos dados de origem do relatório. */
+	public static boolean saveCSV(String pReportFileName, byte[] pCSVFile) {
+		if (pCSVFile == null || pCSVFile.length == 0) {
+			return false;
+		}
+		ByteArrayOutputStream xFileCSV = new ByteArrayOutputStream(pCSVFile.length);
+		xFileCSV.write(pCSVFile, 0, pCSVFile.length);
+		return Boolean.TRUE.equals(DBSHttp.sendFile(xFileCSV, pReportFileName + ".csv", "text/csv; charset=UTF-8"));
+	}
 	
 	/**
 	 * Salvar relatório em HTML.

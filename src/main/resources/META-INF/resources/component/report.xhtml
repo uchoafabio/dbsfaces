@@ -53,6 +53,7 @@
 										<dbs:menuitem id="obformatos" label="#{cc.resourceBundleMap.exportar}" iconClass="-i_out">
 											<dbs:menuitem id="obPDF" action="#{cc.reportBean.savePDF()}" label="PDF - Acrobat"/>
 											<dbs:menuitem id="obXLS" action="#{cc.reportBean.saveXLS()}" label="XLSX - Excel"/>
+											<dbs:menuitem id="obCSV" action="#{cc.reportBean.saveCSV()}" label="CSV - Dados" rendered="#{cc.reportBean.isCSVAvailable}"/>
 											<dbs:menuitem id="obXML" action="#{cc.reportBean.saveXML()}" label="XML"/>
 											<dbs:menuitem id="obHTML" action="#{cc.reportBean.saveHTML()}" label="Html"/>
 										</dbs:menuitem>

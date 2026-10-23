@@ -2,6 +2,7 @@ package br.com.dbsoft.ui.bean.report;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -9,6 +10,7 @@ import br.com.dbsoft.error.DBSIOException;
 import br.com.dbsoft.message.IDBSMessageBase.MESSAGE_TYPE;
 import br.com.dbsoft.ui.bean.DBSBeanModalMessages;
 import br.com.dbsoft.ui.bean.report.DBSReportBeanEvent.REPORT_EVENT;
+import br.com.dbsoft.ui.core.DBSReportCSV;
 import br.com.dbsoft.ui.core.DBSReportFormUtil;
 import br.com.dbsoft.util.DBSFormat;
 import br.com.dbsoft.util.DBSNumber;
@@ -36,6 +38,8 @@ public abstract class DBSReportBean extends DBSBeanModalMessages {
 	private Integer					wRecordCount;
 	private Boolean					wShowFilters = true;
 	private JasperPrint 			wJasperPrint = null;
+	private byte[] wCSVFile;
+	private boolean wCSVFailed;
 	private String					wCaption;
 	private String wCurrentTabPage = tabPageIdFiltros;
 
@@ -169,6 +173,8 @@ public abstract class DBSReportBean extends DBSBeanModalMessages {
 	 * Cria relatório.
 	 */
 	public synchronized void create() throws DBSIOException {
+		wCSVFile = null;
+		wCSVFailed = false;
 		//Chama validação e NÃO gera relatório em caso de erro.
 		if (!pvFireEventValidate()){
 			//Mantem na aba de filtro
@@ -208,6 +214,19 @@ public abstract class DBSReportBean extends DBSBeanModalMessages {
 					addMessage("vazio", MESSAGE_TYPE.INFORMATION, "Relatório sem informação.");
 				}
 			}
+			// Guarda o CSV da mesma consulta do PDF, antes de fechar a conexão.
+			// Falhas na exportação tabular não impedem a visualização do relatório.
+			if (getIsCreated()) {
+				try {
+					Collection<?> xCSVData = getCSVData(xDados);
+					if (xCSVData != null) {
+						wCSVFile = DBSReportCSV.create(xCSVData, getCSVColumns());
+					}
+				} catch (Exception e) {
+					wCSVFailed = true;
+					wLogger.error("Erro ao preparar CSV do relatório " + pvGetReportName(), e);
+				}
+			}
 			xTempo = System.currentTimeMillis() - xStartTime;
 			wLogger.info("Relatório gerado em " +  DBSFormat.getFormattedNumber(DBSNumber.divide(xTempo.doubleValue(), 1000D).doubleValue(), 3) + " segundos.");
 		} catch (DBSIOException e) {
@@ -240,6 +259,22 @@ public abstract class DBSReportBean extends DBSBeanModalMessages {
 	public synchronized void saveXLS() {
 //		DBSReportFormUtil.saveXLS(pvGetReportName(), wJasperPrint);
 		DBSReportFormUtil.saveXLSX(pvGetReportName(), wJasperPrint);
+	}
+
+	/** Retorna se há dados tabulares para o relatório gerado. */
+	public Boolean getIsCSVAvailable() {
+		return getIsCreated() && (wCSVFile != null || wCSVFailed);
+	}
+
+	/** Inicia o download dos dados da mesma geração exibida em PDF. */
+	public synchronized void saveCSV() {
+		if (!getIsCreated() || wCSVFile == null) {
+			addMessage("erro_csv", MESSAGE_TYPE.ERROR, "Não foi possível gerar o CSV deste relatório.");
+			return;
+		}
+		if (!DBSReportFormUtil.saveCSV(pvGetReportName(), wCSVFile)) {
+			addMessage("erro_csv", MESSAGE_TYPE.ERROR, "Não foi possível baixar o CSV deste relatório.");
+		}
 	}
 
 	/* 
@@ -303,6 +338,24 @@ public abstract class DBSReportBean extends DBSBeanModalMessages {
 	 */
 	protected abstract JRBeanCollectionDataSource getCollectionDataSource() throws DBSIOException;
 	
+	/**
+	 * Dados tabulares da mesma consulta utilizada pelo Jasper. Sobrescreva para
+	 * incluir cálculos do layout ou adaptar sub-relatórios. Para relatórios SQL,
+	 * pData é null e o padrão não oferece CSV; a conexão permanece aberta aqui.
+	 */
+	protected Collection<?> getCSVData(JRBeanCollectionDataSource pData) throws DBSIOException {
+		return pData == null ? null : pData.getData();
+	}
+
+	/**
+	 * Caminho do campo -> título da coluna. Use LinkedHashMap para definir ordem.
+	 * Ex.: dados_ativo.produto -> Produto. Null inclui todos os campos de origem
+	 * em ordem alfabética. Cálculos do Jasper precisam ser incluídos em getCSVData.
+	 */
+	protected Map<String, String> getCSVColumns() {
+		return null;
+	}
+
 	
 	// Private ==============================================================================
 	/**
